@@ -1,6 +1,5 @@
 services:
   app:
-    image: sekponakokou/fastapi-app:latest
-    restart: always
+    image: fastapi-app:latest
     ports:
-      - "80:8000"
+      - "80:80"
