@@ -1,6 +1,6 @@
 services:
   app:
-    image: $DOCKER_USER/fastapi-app:latest
+    image: sekponakokou/fastapi-app:latest
     restart: always
     ports:
       - "80:80"
