@@ -3,7 +3,7 @@ name: Deploy FastAPI to EC2
 on:
   push:
     branches:
-      - master  # Remplacement de 'master' par 'main' si applicable
+      - master
 
 jobs:
   deploy:
@@ -13,21 +13,25 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Build Docker image
+    - name: Configure SSH Key
+      run: |
+        echo "${{ secrets.EC2_KEY }}" > ec2-key.pem
+        chmod 400 ec2-key.pem
+
+    - name: Build Docker Image
       run: |
         docker build -t fastapi-app .
 
-    - name: Push Docker image to EC2
+    - name: Transfer and Run Docker Image on EC2
       env:
         HOST: ${{ secrets.EC2_HOST }}
         USER: ${{ secrets.EC2_USER }}
-        KEY: ${{ secrets.EC2_KEY }}
       run: |
-        # Copier l'image Docker sur l'instance EC2
-        docker save fastapi-app | bzip2 | ssh -i $KEY $USER@$HOST "bunzip2 | docker load"
+        # Transférer l'image Docker
+        docker save fastapi-app | bzip2 | ssh -i ec2-key.pem $USER@$HOST "bunzip2 | docker load"
 
-        # Démarrer le conteneur sur EC2
-        ssh -i $KEY $USER@$HOST "
+        # Démarrer le conteneur
+        ssh -i ec2-key.pem $USER@$HOST "
           docker stop fastapi-container || true && \
           docker rm fastapi-container || true && \
           docker run -d --name fastapi-container -p 80:80 fastapi-app
