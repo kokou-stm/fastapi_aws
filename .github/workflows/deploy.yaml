@@ -1,27 +1,46 @@
-name: Deploy FastAPI on EC2
+name: 🚀 Deploy FastAPI to AWS EC2
 
 on:
   push:
     branches:
-      - master
+      - master  # Déclenchement uniquement sur master
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 📥 Récupérer le code
-      uses: actions/checkout@v3
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v3
 
-    - name: 📡 Se connecter à l'instance EC2
-      uses: appleboy/ssh-action@v0.1.4
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        script: |
-          cd ~/fastapi-app || git clone https://github.com/kokou-stm/fastapi_aws.git ~/fastapi-app
-          cd ~/fastapi-app
-          git pull origin main
-          docker-compose down
-          docker-compose up -d --build
+      - name: 📡 Ajouter la clé privée SSH sur le runner GitHub
+        run: |
+          echo "${{ secrets.EC2_KEY }}" > ec2_key.pem
+          chmod 600 ec2_key.pem
+
+      - name: 🛠️ Déployer sur l'instance EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            # Vérifier si le dossier existe, sinon cloner
+            if [ ! -d "~/fastapi-app" ]; then
+              git clone https://github.com/kokou-stm/fastapi_aws.git ~/fastapi-app
+            fi
+            cd ~/fastapi-app
+            git pull origin master  # Récupérer les dernières modifications
+            
+            # Arrêter le conteneur existant s'il y en a un
+            docker stop fastapi-container || true
+            docker rm fastapi-container || true
+            
+            # Supprimer l'image précédente
+            docker rmi fastapi-image || true
+            
+            # Recréer l'image Docker
+            docker build -t fastapi-image .
+            
+            # Démarrer le conteneur
+            docker run -d --name fastapi-container -p 80:8000 fastapi-image
+          EOF
+
+      - name: ✅ Nettoyage des fichiers temporaires
+        run: rm -f ec2_key.pem
