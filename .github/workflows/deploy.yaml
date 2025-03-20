@@ -34,6 +34,21 @@ jobs:
       run: |
         scp -i private_key.pem docker-compose.yml $USER@$HOST:/home/$USER/
         # scp -i private_key.pem .env $USER@$HOST:/home/$USER/  # Si un fichier .env est utilisé
+    
+        - name: Install Docker Compose on EC2
+      env:
+        HOST: ${{ secrets.EC2_HOST }}
+        USER: ${{ secrets.EC2_USER }}
+      run: |
+        ssh -i private_key.pem $USER@$HOST << 'EOF'
+          sudo yum update -y
+          sudo yum install -y docker
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+        EOF
 
     - name: Deploy on EC2
       env:
