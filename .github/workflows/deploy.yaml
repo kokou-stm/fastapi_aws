@@ -35,6 +35,15 @@ jobs:
         scp -i private_key.pem docker-compose.yml $USER@$HOST:/home/$USER/
         # scp -i private_key.pem .env $USER@$HOST:/home/$USER/  # Si un fichier .env est utilisé
     
+    - name: Fix Docker permissions
+      env:
+        HOST: ${{ secrets.EC2_HOST }}
+        USER: ${{ secrets.EC2_USER }}
+      run: |
+        ssh -i private_key.pem $USER@$HOST << 'EOF'
+          sudo usermod -aG docker $USER
+          newgrp docker
+        EOF
 
 
     - name: Install Docker Compose on EC2
