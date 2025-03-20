@@ -3,4 +3,4 @@ services:
     image: sekponakokou/fastapi-app:latest
     restart: always
     ports:
-      - "80:80"
+      - "80:8000"
