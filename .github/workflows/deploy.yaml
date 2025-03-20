@@ -35,7 +35,9 @@ jobs:
         scp -i private_key.pem docker-compose.yml $USER@$HOST:/home/$USER/
         # scp -i private_key.pem .env $USER@$HOST:/home/$USER/  # Si un fichier .env est utilisé
     
-        - name: Install Docker Compose on EC2
+
+
+    - name: Install Docker Compose on EC2
       env:
         HOST: ${{ secrets.EC2_HOST }}
         USER: ${{ secrets.EC2_USER }}
@@ -49,6 +51,8 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
           sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
         EOF
+
+
 
     - name: Deploy on EC2
       env:
