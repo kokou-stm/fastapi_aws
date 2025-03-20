@@ -68,6 +68,19 @@ jobs:
           fi
         EOF
 
+
+    - name: Build and Push Docker Image
+      env:
+        HOST: ${{ secrets.EC2_HOST }}
+        USER: ${{ secrets.EC2_USER }}
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        docker build -t fastapi-app .
+        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+        docker tag fastapi-app $DOCKER_USER/fastapi-app:latest
+        docker push $DOCKER_USER/fastapi-app:latest
+
     - name: Deploy on EC2
       env:
         HOST: ${{ secrets.EC2_HOST }}

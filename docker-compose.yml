@@ -1,7 +1,6 @@
-version: '3'
-
 services:
   app:
-    image: fastapi-app
+    image: $DOCKER_USER/fastapi-app:latest
+    restart: always
     ports:
       - "80:80"
