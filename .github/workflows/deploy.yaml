@@ -3,7 +3,7 @@ name: Deploy FastAPI to EC2
 on:
   push:
     branches:
-      - master  # Déclenche le workflow sur un push vers la branche master
+      - master
 
 jobs:
   deploy:
@@ -13,15 +13,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Build Docker image
-      run: docker build -t fastapi-app .
-
     - name: Setup SSH Key
       env:
         KEY: ${{ secrets.EC2_KEY }}
       run: |
         echo "$KEY" > private_key.pem
         chmod 600 private_key.pem
+
+    - name: Add EC2 to known hosts
+      env:
+        HOST: ${{ secrets.EC2_HOST }}
+      run: ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
 
     - name: Copy files to EC2
       env:
