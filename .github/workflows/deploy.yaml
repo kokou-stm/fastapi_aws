@@ -3,7 +3,7 @@ name: Deploy FastAPI to EC2
 on:
   push:
     branches:
-      - master
+      - master  # Déclenche le workflow sur un push vers la branche master
 
 jobs:
   deploy:
@@ -16,11 +16,31 @@ jobs:
     - name: Build Docker image
       run: docker build -t fastapi-app .
 
-    - name: Push Docker image to EC2
+    - name: Setup SSH Key
+      env:
+        KEY: ${{ secrets.EC2_KEY }}
+      run: |
+        echo "$KEY" > private_key.pem
+        chmod 600 private_key.pem
+
+    - name: Copy files to EC2
       env:
         HOST: ${{ secrets.EC2_HOST }}
         USER: ${{ secrets.EC2_USER }}
-        KEY: ${{ secrets.EC2_KEY }}
       run: |
-        scp -i $KEY docker-compose.yml $USER@$HOST:/home/$USER/
-        ssh -i $KEY $USER@$HOST "docker-compose up -d"
+        scp -i private_key.pem docker-compose.yml $USER@$HOST:/home/$USER/
+        scp -i private_key.pem .env $USER@$HOST:/home/$USER/  # Si tu utilises un fichier .env
+
+    - name: Deploy on EC2
+      env:
+        HOST: ${{ secrets.EC2_HOST }}
+        USER: ${{ secrets.EC2_USER }}
+      run: |
+        ssh -i private_key.pem $USER@$HOST << 'EOF'
+          cd /home/$USER/
+          docker-compose down  # Arrête l'ancien conteneur si nécessaire
+          docker-compose up -d --build  # Redémarre avec la nouvelle image
+        EOF
+
+    - name: Clean up
+      run: rm -f private_key.pem
