@@ -20,10 +20,12 @@ jobs:
         echo "$KEY" > private_key.pem
         chmod 600 private_key.pem
 
-    - name: Add EC2 to known hosts
+    - name: Ensure SSH folder exists and add EC2 to known hosts
       env:
         HOST: ${{ secrets.EC2_HOST }}
-      run: ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+      run: |
+        mkdir -p ~/.ssh  # ✅ Création du dossier si absent
+        ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
 
     - name: Copy files to EC2
       env:
@@ -31,7 +33,7 @@ jobs:
         USER: ${{ secrets.EC2_USER }}
       run: |
         scp -i private_key.pem docker-compose.yml $USER@$HOST:/home/$USER/
-        scp -i private_key.pem .env $USER@$HOST:/home/$USER/  # Si tu utilises un fichier .env
+        scp -i private_key.pem .env $USER@$HOST:/home/$USER/  # Si un fichier .env est utilisé
 
     - name: Deploy on EC2
       env:
