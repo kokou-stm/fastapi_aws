@@ -33,7 +33,9 @@ jobs:
         USER: ${{ secrets.EC2_USER }}
       run: |
         scp -i private_key.pem docker-compose.yml $USER@$HOST:/home/$USER/
-        # scp -i private_key.pem .env $USER@$HOST:/home/$USER/  # Si un fichier .env est utilisé
+        if [ -f .env ]; then
+          scp -i private_key.pem .env $USER@$HOST:/home/$USER/
+        fi
     
     - name: Fix Docker permissions
       env:
@@ -42,11 +44,10 @@ jobs:
       run: |
         ssh -i private_key.pem $USER@$HOST << 'EOF'
           sudo usermod -aG docker $USER
-          newgrp docker
+          sudo chmod 666 /var/run/docker.sock  # ✅ Donne l'accès au socket Docker
         EOF
 
-
-    - name: Install Docker Compose on EC2
+    - name: Install Docker and Docker Compose on EC2
       env:
         HOST: ${{ secrets.EC2_HOST }}
         USER: ${{ secrets.EC2_USER }}
@@ -56,12 +57,16 @@ jobs:
           sudo yum install -y docker
           sudo systemctl start docker
           sudo systemctl enable docker
-          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+
+          # ✅ Vérifie si Docker Compose est déjà installé
+          if ! command -v docker-compose &> /dev/null; then
+            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+          else
+            echo "Docker Compose est déjà installé."
+          fi
         EOF
-
-
 
     - name: Deploy on EC2
       env:
@@ -70,8 +75,8 @@ jobs:
       run: |
         ssh -i private_key.pem $USER@$HOST << 'EOF'
           cd /home/$USER/
-          docker-compose down  # Arrête l'ancien conteneur si nécessaire
-          docker-compose up -d --build  # Redémarre avec la nouvelle image
+          sudo docker-compose down  # ✅ Ajout de sudo pour éviter les erreurs de permission
+          sudo docker-compose up -d --build  # ✅ Ajout de sudo
         EOF
 
     - name: Clean up
