@@ -1,5 +1,8 @@
+
+  
 services:
   app:
-    image: fastapi-app:latest
+    image: sekponakokou/fastapi-app:latest
     ports:
       - "80:80"
+
