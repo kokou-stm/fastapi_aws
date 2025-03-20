@@ -1,0 +1,27 @@
+name: Deploy FastAPI on EC2
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Récupérer le code
+      uses: actions/checkout@v3
+
+    - name: 📡 Se connecter à l'instance EC2
+      uses: appleboy/ssh-action@v0.1.4
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        script: |
+          cd ~/fastapi-app || git clone https://github.com/SEU_NOM_UTILISATEUR/fastapi-app.git ~/fastapi-app
+          cd ~/fastapi-app
+          git pull origin main
+          docker-compose down
+          docker-compose up -d --build
