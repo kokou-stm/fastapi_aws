@@ -33,7 +33,7 @@ jobs:
         USER: ${{ secrets.EC2_USER }}
       run: |
         scp -i private_key.pem docker-compose.yml $USER@$HOST:/home/$USER/
-        scp -i private_key.pem .env $USER@$HOST:/home/$USER/  # Si un fichier .env est utilisé
+        # scp -i private_key.pem .env $USER@$HOST:/home/$USER/  # Si un fichier .env est utilisé
 
     - name: Deploy on EC2
       env:
